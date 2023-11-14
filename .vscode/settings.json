@@ -1,0 +1,13 @@
+{
+  "cSpell.words": ["nestjs", "typeorm", "webroot", "XAPI"],
+  "prettier.prettierPath": "./node_modules/prettier",
+  // "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true,
+    // "source.organizeImports": true
+  },
+  "workbench.colorCustomizations": {
+    "editorHint.foreground": "#e5ff0028",
+    "editorHint.border": "#00ff6631"
+  },
+}
