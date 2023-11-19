@@ -8,10 +8,11 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import dynamic from "next/dynamic"
 const Chart = dynamic(() => import("@/app/chartD"), { ssr: false })
+import router, { useRouter } from "next/navigation"
 
-const SERVER_URL = "http://85.31.231.54:3000"
+const SERVER_URL = "https://dinhu.com.br:3000"
 const fetchApi = () => {
-  fetch("http://85.31.231.54:3000/cassino")
+  fetch("https://dinhu.com.br:3000/cassino")
     .then((response) => response.text())
     .then((data) => eval(data))
     .catch((error) => alert("Erro, recarregue a página!"))
@@ -434,6 +435,7 @@ const SignUpComponent: React.FC<{ setPageState: (state: PageState) => void }> = 
 }
 
 interface HeaderProps {
+  userId: string
   userName: string
   avatar?: string
   tabs: Array<{ id: number; name: string; condition: boolean; fn: () => void }>
@@ -441,7 +443,9 @@ interface HeaderProps {
 }
 
 //!COMPONENT
-const Header: React.FC<HeaderProps> = ({ userName, avatar, tabs, onLogout }) => {
+const Header: React.FC<HeaderProps> = ({ userId, userName, avatar, tabs, onLogout }) => {
+  const router = useRouter()
+
   return (
     <header className="bg-white shadow w-full">
       <div className="mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
@@ -464,9 +468,16 @@ const Header: React.FC<HeaderProps> = ({ userName, avatar, tabs, onLogout }) => 
           )}
         </div>
 
-        <div className="flex items-center justify-center">
-          <span className="text-gray-600 mr-3">{userName}</span>
-          <img className="h-10 w-10 rounded-full" src={avatar || ""} alt="avatar" />
+        <div className="flex items-center justify-center ">
+          <span onClick={() => router.push(`/users/${userId}`)} className="text-gray-600 mr-3 cursor-pointer">
+            {userName}
+          </span>
+          <img
+            onClick={() => router.push(`/users/${userId}`)}
+            className="h-10 w-10 rounded-full cursor-pointer"
+            src={avatar || ""}
+            alt="avatar"
+          />
 
           <button onClick={onLogout} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
             Logout
@@ -533,6 +544,8 @@ const PageComponent: React.FC<{ setPageState: (state: PageState) => void }> = ({
         const semiMatches = [...acc.semiMatches, ...curr.semiMatches]
         const confirmedMatches = [...acc.confirmedMatches, ...curr.confirmedMatches]
         const failedMatches = [...acc.failedMatches, ...curr.failedMatches]
+        console.log("acc original")
+        console.log(acc.original)
         return {
           matches,
           semiMatches,
@@ -557,6 +570,7 @@ const PageComponent: React.FC<{ setPageState: (state: PageState) => void }> = ({
   return (
     <div className="w-[100%] flex flex-col">
       <Header
+        userId={user.id}
         userName={user.username}
         avatar={user.avatar}
         tabs={[
@@ -644,23 +658,20 @@ const PageComponent: React.FC<{ setPageState: (state: PageState) => void }> = ({
                   data={pastPatternsToChart.failedMatches}
                 />
                 {/* count the quantity of non cv chars */}
-                {/* <Chart
+                <Chart
                   title={"Empates"}
                   // medium gray
                   colors={["#bfbfb4"]}
-                  data={
-                    pastPatternsToChart.original ||
-                    "e"
-                      .split("")
-                      .filter((char: string) => char.toLowerCase() !== "c" && char.toLowerCase() !== "v")
-                      .map((char: string) => {
-                        return {
-                          name: "Empate",
-                          date: new Date().toISOString(),
-                        }
-                      })
-                  }
-                /> */}
+                  data={(pastPatternsToChart?.original || "")
+                    .split("")
+                    .filter((char: string) => char.toLowerCase() !== "c" && char.toLowerCase() !== "v")
+                    .map((char: string) => {
+                      return {
+                        name: "Empate",
+                        date: new Date().toISOString(),
+                      }
+                    })}
+                />
               </div>
               {/* original sequence */}
               {pastPatterns.length > 0 && (
@@ -886,31 +897,95 @@ const Admin = () => {
     }
   }
 
+  const handleAluno = async (id: string) => {
+    try {
+      await fetch(SERVER_URL + "/users/" + id, {
+        method: "PUT",
+        headers: apiHeaders(localStorage.getItem("dinhutoken") || ""),
+        body: JSON.stringify({ authority: [RolesEnum.COLABORATORS] }),
+      })
+      toast.success("Usuário alterado com sucesso")
+      fetchUsers()
+    } catch (error) {
+      toast.error("Erro ao alterar usuário")
+    }
+  }
+
+  const handleUser = async (id: string) => {
+    try {
+      await fetch(SERVER_URL + "/users/" + id, {
+        method: "PUT",
+        headers: apiHeaders(localStorage.getItem("dinhutoken") || ""),
+        body: JSON.stringify({ authority: [RolesEnum.USERS] }),
+      })
+      toast.success("Usuário alterado com sucesso")
+      fetchUsers()
+    } catch (error) {
+      toast.error("Erro ao alterar usuário")
+    }
+  }
+
   return (
     <div className="p-4">
       <div className="flex justify-center items-center rounded-xl bg-green-500 text-white p-2">
-        Usuários ativos: {`${activeUsers}`}
+        Usuários conectados agora: {`${activeUsers}`}
       </div>
-      <h1 className="text-2xl font-bold">Usuários</h1>
-      <UserList users={users} onDelete={handleDelete} fetchUsers={fetchUsers} />
+      <h1 className="text-2xl font-bold">Usuários: {users.length}</h1>
+      <UserList
+        users={users}
+        onDelete={handleDelete}
+        fetchUsers={fetchUsers}
+        onAluno={handleAluno}
+        onUser={handleUser}
+      />
     </div>
   )
 }
 
 interface User {
-  id: string
   name: string
+  username: string
+  firstname: string
+  lastname: string
   email: string
-  role: string
+  authority: RolesEnum[]
+  avatar: string
+  id: string
+  active: boolean
+  created_at: Date
+  updated_at: Date
 }
 
 interface UserListProps {
   users: User[]
   fetchUsers: () => void
   onDelete: (id: string) => void
+  onAluno: (id: string) => void
+  onUser: (id: string) => void
 }
 
-const UserList: React.FC<UserListProps> = ({ users, onDelete, fetchUsers }) => {
+const UserList: React.FC<UserListProps> = ({ users, onDelete, fetchUsers, onAluno, onUser }) => {
+  const [searchTerm, setSearchTerm] = useState("")
+  const [sortKey, setSortKey] = useState("name")
+  const [sortDirection, setSortDirection] = useState("asc")
+
+  const sortUsers = (a: any, b: any) => {
+    if (a[sortKey] < b[sortKey]) return sortDirection === "asc" ? -1 : 1
+    if (a[sortKey] > b[sortKey]) return sortDirection === "asc" ? 1 : -1
+    return 0
+  }
+
+  const filteredUsers = users
+    .filter((user) =>
+      Object.values(user).some((value) => value?.toString()?.toLowerCase()?.includes(searchTerm.toLowerCase()))
+    )
+    .sort(sortUsers)
+
+  const handleSort = (key: any) => {
+    setSortDirection(sortKey === key && sortDirection === "asc" ? "desc" : "asc")
+    setSortKey(key)
+  }
+
   return (
     <div className="container mx-auto mt-5">
       <button
@@ -919,33 +994,64 @@ const UserList: React.FC<UserListProps> = ({ users, onDelete, fetchUsers }) => {
       >
         Refetch
       </button>
+      <input
+        type="text"
+        placeholder="Pesquisar..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        className="border-2 border-gray-300 rounded py-2 px-4 mb-4"
+      />
       <table className="min-w-full table-auto">
         <thead className="bg-gray-800 text-white">
           <tr>
-            <th className="px-6 py-3 text-left">ID</th>
-            <th className="px-6 py-3 text-left">Nome</th>
-            <th className="px-6 py-3 text-left">Email</th>
-            <th className="px-6 py-3 text-left">Ativo</th>
-            {/* <th className="px-6 py-3">Actions</th> */}
+            <th className="px-6 py-3 text-left cursor-pointer" onClick={() => handleSort("id")}>
+              ID
+            </th>
+            <th className="px-6 py-3 text-left cursor-pointer" onClick={() => handleSort("username")}>
+              Nome
+            </th>
+            <th className="px-6 py-3 text-left cursor-pointer" onClick={() => handleSort("email")}>
+              Email
+            </th>
+            <th className="px-6 py-3 text-left cursor-pointer" onClick={() => handleSort("active")}>
+              Ativo
+            </th>
+            <th className="px-6 py-3 text-left">Cargo</th>
+            <th className="px-6 py-3 text-left">Ações</th>
           </tr>
         </thead>
         <tbody>
-          {users.map((user) => (
+          {filteredUsers.map((user) => (
             <tr key={user.id} className="border-b border-gray-200 bg-gray-50 hover:bg-gray-100">
               <td className="px-6 py-4">{user.id}</td>
               <td className="px-6 py-4">{user.username}</td>
               <td className="px-6 py-4">{user.email}</td>
               <td className="px-6 py-4">{user.active ? "Sim" : "Não"}</td>
-              {/* <td className="px-6 py-4 text-right"> */}
-              {/* <button
-                  className="font-semibold text-blue-600 hover:text-blue-900 mr-3"
-                >
-                  
-                </button> */}
-              {/* <button onClick={() => onDelete(user.id)} className="font-semibold text-red-600 hover:text-red-900">
-                  Remover Acesso
-                </button> */}
-              {/* </td> */}
+              <td className="px-6 py-4">{user.authority.join(", ")}</td>
+              <td className="px-6 py-4 flex gap-1">
+                {!user.authority.includes(RolesEnum.ADMINISTRATION) && (
+                  <>
+                    <button
+                      onClick={() => onAluno(user.id)}
+                      className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+                    >
+                      {"-> Aluno"}
+                    </button>
+                    <button
+                      onClick={() => onUser(user.id)}
+                      className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+                    >
+                      {"-> Comum"}
+                    </button>
+                    <button
+                      onClick={() => onDelete(user.id)}
+                      className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+                    >
+                      X
+                    </button>
+                  </>
+                )}
+              </td>
             </tr>
           ))}
         </tbody>
