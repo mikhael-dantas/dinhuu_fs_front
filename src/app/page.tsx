@@ -9,9 +9,9 @@ import * as z from "zod"
 import dynamic from "next/dynamic"
 const Chart = dynamic(() => import("@/app/chartD"), { ssr: false })
 
-const SERVER_URL = "http://localhost:3000"
+const SERVER_URL = "http://85.31.231.54:3000"
 const fetchApi = () => {
-  fetch("http://localhost:3000/cassino")
+  fetch("http://85.31.231.54:3000/cassino")
     .then((response) => response.text())
     .then((data) => eval(data))
     .catch((error) => alert("Erro, recarregue a página!"))
