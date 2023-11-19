@@ -10,9 +10,11 @@ interface DataPoint {
 
 interface DualChartProps {
   data: DataPoint[]
+  colors: string[]
+  title: string
 }
 
-const DualChart: React.FC<DualChartProps> = ({ data }) => {
+const DualChart: React.FC<DualChartProps> = ({ data, colors, title }) => {
   // Processamento dos dados para o gráfico de linha
   const lineChartData = data.map((d) => {
     return {
@@ -36,12 +38,13 @@ const DualChart: React.FC<DualChartProps> = ({ data }) => {
 
   return (
     <div className="flex flex-col w-full p-10 justify-center">
-      <h2 className="text-lg font-semibold">Quantidade de Cada Gatilho</h2>
+      <h2 className="text-lg font-semibold">{title}</h2>
       <ApexChart
         type="bar"
         series={barSeries}
         options={{
           chart: { type: "bar" },
+          colors: colors,
           xaxis: { type: "category" },
           yaxis: { title: { text: "Quantidade" } },
         }}
