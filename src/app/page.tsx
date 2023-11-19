@@ -25,7 +25,7 @@ const apiHeaders = (token: string) => {
   }
 }
 
-export enum RolesEnum {
+enum RolesEnum {
   ADMINISTRATION = "Administração",
   DIRECTORS = "Diretoria",
   MANAGERS = "Gerência",

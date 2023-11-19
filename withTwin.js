@@ -1,11 +1,13 @@
 const path = require('path')
 
 // The folders containing files importing twin.macro
+const nodeExternals = require('webpack-node-externals');
 const includedDirs = [path.resolve(__dirname, 'src')]
 
 module.exports = function withTwin(nextConfig) {
   return {
     ...nextConfig,
+    externals: [nodeExternals()],
     webpack(config, options) {
       const { dev, isServer } = options
       // Make the loader work with the new app directory
